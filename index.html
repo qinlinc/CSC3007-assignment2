@@ -1,0 +1,126 @@
+<html>
+
+<head>
+    <title>Lab Assignment 2</title>
+    <style>
+        body {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Cases Recorded for Selected Major Offences</h1>
+    <h4>Year 2020</h4>
+    <!-- Create a div where the graph will take place -->
+    <div id="chart"></div>
+
+    <!-- Load D3 from site -->
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        var data = {
+            resource_id: '83c21090-bd19-4b54-ab6b-d999c251edcf', // the resource id
+        };
+        $.ajax({
+            url: 'https://data.gov.sg/api/action/datastore_search',
+            data: data,
+            dataType: 'json',
+            success: function (data) {
+                var crimeCases = data.result.records;
+                console.log(crimeCases);
+
+                //filter cases
+                var crimeCases = crimeCases.filter(function (d) { return d.year == "2020" });
+
+
+                let margin = { top: 30, right: 20, bottom: 110, left: 110 },
+                    width = 800 - margin.left - margin.right,
+                    height = 500 - margin.top - margin.bottom;
+
+                var svg = d3.select("#chart").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                //x-axis
+                var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+                x.domain(crimeCases.map(function (d) { return d.level_2; }));
+
+                //y-axis
+                var y = d3.scale.linear().range([height, 0]);
+                //y.domain([0, d3.max(crimeCases, function (d) { return +d.value; })]);
+                y.domain([0, 20000]);
+
+                var xAxis = d3.svg.axis()
+                    .scale(x)
+                    .orient("bottom");
+                var yAxis = d3.svg.axis()
+                    .scale(y)
+                    .orient("left")
+                    .ticks(10);
+
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(xAxis)
+                    .selectAll("text")
+                    .style("text-anchor", "end")
+                    .attr("transform", "rotate(-30)");
+                // svg.append("text")
+                //     .text("Type of offence")
+                //     .attr("transform", "translate(400, 500)");
+
+                svg.append("g")
+                    .call(yAxis)
+                    .append("text")
+                    .style("text-anchor", "end")
+                //.text("Number of cases")
+                //.attr("transform", "translate(-80,100)rotate(-90)");
+
+                //tooltip
+                var tooltip = d3.select("#chart")
+                    .data(crimeCases)
+                    .append("div")
+                    .style("class", "tooltip")
+                    .style("opacity", 0)
+                    .style("border", "solid")
+                    .style("border-width", "1px")
+                    .style("border-radius", "3px")
+                    .style("padding", "5px")
+
+                var mousemove = function (d) {
+                    tooltip.style("left", (d3.mouse(this)[0] + 90) + "px")
+                        .style("top", (d3.mouse(this)[1]) + "px")
+                }
+
+                var mouseleave = function (d) {
+                    tooltip.style("opacity", 0);
+                }
+
+                var mouseover = function (d) {
+                    tooltip.html("<strong>Crime rate: </strong>" + d.value)
+                    .style("opacity", 1)
+                }
+
+                //bar
+                svg.selectAll("bar")
+                    .data(crimeCases)
+                    .enter()
+                    .append("rect")
+                    .attr("x", function (d) { return x(d.level_2); })
+                    .attr("class", "bar")
+                    .attr("width", x.rangeBand())
+                    .attr("y", function (d) { return y(d.value); })
+                    .attr("height", function (d) { return height - y(d.value); })
+                    .attr("fill", "purple")
+                    .on("mousemove", mousemove)
+                    .on("mouseleave", mouseleave)
+                    .on("mouseover", mouseover);
+
+            }
+        });
+    </script>
+</body>
+
+</html>
